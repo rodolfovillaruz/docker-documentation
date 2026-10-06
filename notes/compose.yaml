@@ -8,9 +8,21 @@ services:
       - PUID=1000        # from `id your_user`
       - PGID=1000
       - TZ=Etc/UTC
+      # CDP for ~/Desktop/chromium-debug/cdp.mjs; needs a non-default profile dir
+      - CHROME_CLI=--remote-debugging-port=9222 --user-data-dir=/config/chromium-cdp
     volumes:
       - ./config:/config  # home dir, keeps settings across recreates
     ports:
       - 3001:3001
+      - 127.0.0.1:9222:9223  # CDP via cdp-proxy, loopback only (no auth)
     shm_size: "1gb"
+    restart: unless-stopped
+
+  # Headful Chromium binds CDP to 127.0.0.1 inside the container only,
+  # so forward it from the shared network namespace to a publishable port.
+  cdp-proxy:
+    image: alpine/socat
+    container_name: chromium-cdp-proxy
+    network_mode: service:chromium
+    command: tcp-listen:9223,fork,reuseaddr tcp-connect:127.0.0.1:9222
     restart: unless-stopped
