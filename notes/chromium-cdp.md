@@ -40,3 +40,28 @@ I didn't use `network_mode: host`, because that would also open the container's 
 - **Restart both containers together.** The proxy joins the `chromium` container's network when it starts. After `docker restart chromium` on its own, the proxy is left on the old network and CDP can't be reached. Use `docker compose restart` (or `docker compose up -d`) so both come back together.
 - **Port clash with the host browser.** The host setup in `~/Desktop/chromium-debug/README.md` also uses port 9222. Run only one of them, or change the host port here and run the script with `CDP_PORT=<port> node cdp.mjs ...`.
 - **The page size follows the web viewer.** The browser window fills the desktop, which is sized to the browser tab you have open on port 3001. Screenshots come out at that size, not at 1280×900.
+
+## Netflix and other DRM sites (error M7701-1003)
+
+This image installs Debian's Chromium, which never downloads the Widevine DRM module. `chrome://components` has no Widevine entry, and restarting doesn't help. Netflix shows error M7701-1003.
+
+Copy the module from the host profile into the container profile instead, and add the file that tells Chromium where to find it. The file must hold the path as the container sees it:
+
+```bash
+H=~/Desktop/chromium-debug/profile/WidevineCdm
+C=./config/chromium-cdp/WidevineCdm
+V=4.10.3050.0   # the version folder in $H
+mkdir -p $C && cp -a $H/$V $C/
+printf '{"Path":"/config/chromium-cdp/WidevineCdm/%s"}' $V > $C/latest-component-updated-widevine-cdm
+docker compose restart
+```
+
+Then check it from an https page:
+
+```bash
+node ~/Desktop/chromium-debug/cdp.mjs goto https://www.netflix.com
+node ~/Desktop/chromium-debug/cdp.mjs eval "navigator.requestMediaKeySystemAccess('com.widevine.alpha',[{initDataTypes:['cenc'],videoCapabilities:[{contentType:'video/mp4;codecs=\"avc1.42E01E\"'}]}]).then(()=>'widevine OK').catch(e=>'widevine FAIL: '+e.message)"
+```
+
+- **The module never updates itself.** If Netflix starts rejecting it, copy a newer version from the host profile the same way.
+- **It lives in `config/`, which isn't in git.** A fresh `config/` needs the copy again.
