@@ -1,15 +1,15 @@
 services:
-  webtop:
-    image: lscr.io/linuxserver/webtop:arch-kde
-    container_name: webtop
+  chromium:
+    image: lscr.io/linuxserver/chromium:latest
+    container_name: chromium
+    security_opt:
+      - seccomp:unconfined  # lets Chromium's sandbox work on more hosts
     environment:
       - PUID=1000        # from `id your_user`
       - PGID=1000
       - TZ=Etc/UTC
-      - CUSTOM_USER=admin      # optional basic auth
-      - PASSWORD=changeme
     volumes:
-      - .:/config  # home dir, keeps settings across recreates
+      - ./config:/config  # home dir, keeps settings across recreates
     ports:
       - 3001:3001
     shm_size: "1gb"
