@@ -36,6 +36,7 @@ I didn't use `network_mode: host`, because that would also open the container's 
 ## Things to expect
 
 - **No authentication.** Anyone who can reach the CDP port fully controls the browser, including its cookies and logins. Keep the `127.0.0.1:` prefix on the port.
-- **Chromium isn't restarted.** The container launches the browser once at startup. If it exits (for example, because its window was closed in the web view), CDP goes away until you run `docker restart chromium`.
+- **Chromium isn't restarted.** The container launches the browser once at startup. If it exits (for example, because its window was closed in the web view), CDP goes away until you run `docker compose restart`.
+- **Restart both containers together.** The proxy joins the `chromium` container's network when it starts. After `docker restart chromium` on its own, the proxy is left on the old network and CDP can't be reached. Use `docker compose restart` (or `docker compose up -d`) so both come back together.
 - **Port clash with the host browser.** The host setup in `~/Desktop/chromium-debug/README.md` also uses port 9222. Run only one of them, or change the host port here and run the script with `CDP_PORT=<port> node cdp.mjs ...`.
 - **The page size follows the web viewer.** The browser window fills the desktop, which is sized to the browser tab you have open on port 3001. Screenshots come out at that size, not at 1280×900.
